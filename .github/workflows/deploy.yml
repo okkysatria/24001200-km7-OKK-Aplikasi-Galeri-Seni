@@ -41,9 +41,10 @@ jobs:
           ssh -i /tmp/gcp-key.json user@your-gcp-ip << 'EOF'
             sudo apt update
             sudo apt install nodejs npm -y
+            npx prisma migrate dev --name init
             sudo npm install -g pm2
             sudo npm install -g jest
-            cd /path/to/your/app  # Ganti dengan path aplikasi kamu
+            cd 24001200-km7-OKK-Aplikasi-Galeri-Seni
             pm2 start app.js --name "art-gallery-app"
             pm2 save
           EOF
