@@ -31,20 +31,20 @@ jobs:
           # Set up GCP CLI
           echo "$GCP_SA_KEY" | base64 --decode > /tmp/gcp-key.json
           gcloud auth activate-service-account --key-file /tmp/gcp-key.json
-          gcloud config set project your-gcp-project-id  # Ganti dengan ID proyek GCP kamu
+          gcloud config set project noble-aquifer-441302-h3  # Set project ID here
           
-          # Upload ke server GCP
-          scp -i /tmp/gcp-key.json -o StrictHostKeyChecking=no -r ./ user@your-gcp-ip:/path/to/your/app
+         
+          scp -i /tmp/gcp-key.json -o StrictHostKeyChecking=no -r ./ user@34.50.88.11:/home/okkysatria17/CH6
 
       - name: Install Node.js and PM2 on GCP VM
         run: |
-          ssh -i /tmp/gcp-key.json user@your-gcp-ip << 'EOF'
+          ssh -i /tmp/gcp-key.json user@34.50.88.11 << 'EOF' 
             sudo apt update
             sudo apt install nodejs npm -y
             npx prisma migrate dev --name init
             sudo npm install -g pm2
             sudo npm install -g jest
-            cd 24001200-km7-OKK-Aplikasi-Galeri-Seni
+            cd /home/okkysatria17/CH6
             pm2 start app.js --name "art-gallery-app"
             pm2 save
           EOF
