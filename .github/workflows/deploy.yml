@@ -1,54 +1,53 @@
-name: Deploy to Google Cloud Platform
+name: Deploy to GCP
 
 on:
   push:
     branches:
-      - main  # Sesuaikan dengan branch yang kamu gunakan
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
         with:
-          node-version: '17'
+          ssh-private-key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
 
-      - name: Install dependencies
+      - name: Copy files to GCP
         run: |
-          npm install
-          npm install --save-dev supertest
-          npm install --save-dev jest
-          
-      - name: SSH into Google Cloud VM and deploy
-        env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-        run: |
-          # Set up GCP CLI
-          echo "$GCP_SA_KEY" | base64 --decode > /tmp/gcp-key.json
-          gcloud auth activate-service-account --key-file /tmp/gcp-key.json
-          gcloud config set project noble-aquifer-441302-h3  # Set project ID here
-          
-         chmod 600 /tmp/gcp-key.json
-         scp -i /tmp/gcp-key.json -o StrictHostKeyChecking=no -r ./ user@34.50.88.11:/home/okkysatria17/CH6
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
+          --exclude '.github/' \
+          --exclude 'node_modules/' \
+          ./ ${{ secrets.GCP_SSH_USER }}@${{ secrets.GCP_HOST }}:/home/${{ secrets.GCP_SSH_USER }}/24001200-km7-OKK-Aplikasi-Galeri-Seni
 
-      - name: Install Node.js and PM2 on GCP VM
+      - name: Deploy application on GCP
         run: |
-          ssh -i /tmp/gcp-key.json user@34.50.88.11 << 'EOF' 
+          ssh -o StrictHostKeyChecking=no ${{ secrets.GCP_SSH_USER }}@${{ secrets.GCP_HOST }} << 'EOF'
+            cd /home/${{ secrets.GCP_SSH_USER }}/24001200-km7-OKK-Aplikasi-Galeri-Seni/ch6
+
+            # Create .env file with GitHub secrets
+            cat <<EOT > .env
+            IMAGEKIT_PUBLIC_KEY=${{ secrets.IMAGEKIT_PUBLIC_KEY }}
+            IMAGEKIT_PRIVATE_KEY=${{ secrets.IMAGEKIT_PRIVATE_KEY }}
+            IMAGEKIT_URL_ENDPOINT=${{ secrets.IMAGEKIT_URL_ENDPOINT }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            EOT
+
             sudo apt update
-            sudo apt install nodejs npm -y
+            sudo apt-get install -y curl
+            curl -fsSL https://deb.nodesource.com/setup_20.x -o nodesource_setup.sh
+            sudo -E bash nodesource_setup.sh
+            sudo apt-get install -y nodejs
+            npm install
             npx prisma migrate dev --name init
-            sudo npm install -g pm2
-            sudo npm install -g jest
-            cd /home/okkysatria17/CH6
+            npx prisma migrate deploy
+            sudo npm install -g pm2 jest
+            pm2 stop art-gallery-app || true
             pm2 start app.js --name "art-gallery-app"
             pm2 save
           EOF
-
-      - name: Clean up
-        run: |
-          rm /tmp/gcp-key.json
