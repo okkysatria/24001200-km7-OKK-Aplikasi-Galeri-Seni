@@ -33,8 +33,8 @@ jobs:
           gcloud auth activate-service-account --key-file /tmp/gcp-key.json
           gcloud config set project noble-aquifer-441302-h3  # Set project ID here
           
-         
-          scp -i /tmp/gcp-key.json -o StrictHostKeyChecking=no -r ./ user@34.50.88.11:/home/okkysatria17/CH6
+         chmod 600 /tmp/gcp-key.json
+         scp -i /tmp/gcp-key.json -o StrictHostKeyChecking=no -r ./ user@34.50.88.11:/home/okkysatria17/CH6
 
       - name: Install Node.js and PM2 on GCP VM
         run: |
